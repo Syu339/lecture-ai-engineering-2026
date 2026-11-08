@@ -5,6 +5,7 @@
 """
 
 import json
+import ramdom
 from functools import cache
 from pathlib import Path
 
@@ -77,3 +78,39 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def make_quiz(lecture: int) -> str:
+    """指定した講義回の用語集から復習問題と解答を1問作成して返す。
+
+    「第2回の復習問題を出して」「第3回の理解度を確認したい」
+    など、ユーザーから復習問題やクイズを求められたときに使用する。
+    lecture には対象の講義回を1始まりの整数で指定する。
+
+    用語集から指定した講義回の用語をランダムに1つ選び、
+    「Xとは何ですか？」という問題と、その用語の定義を
+    JSON形式の文字列として返す。
+    """
+    # 1. 用語集を読み込む
+    glossary = load_glossary()
+
+    # 2. 指定された講義回の用語を抽出する
+    terms = [
+        entry for entry in glossary
+        if entry["lecture"] == lecture
+    ]
+
+    # 3. 該当する用語が存在しない場合
+    if not terms:
+        return f"第{lecture}回の用語は見つかりませんでした。"
+
+    # 4. 用語をランダムに1つ選択する
+    selected = random.choice(terms)
+
+    # 5. 問題と解答を作成する
+    quiz = {
+        "question": f"{selected['term']}とは何ですか？",
+        "answer": selected["definition"],
+    }
+
+    # 6. JSON形式の文字列として返す
+    return json.dumps(quiz, ensure_ascii=False)
